@@ -1,0 +1,8 @@
+
+CREATE TABLE video_tasks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  task_id VARCHAR(255) NOT NULL,
+  input TEXT,
+  output TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

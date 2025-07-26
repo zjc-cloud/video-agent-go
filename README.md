@@ -1,0 +1,3 @@
+# Video Agent Go
+
+多模态视频生成服务，使用 Golang + Herz 框架。...
