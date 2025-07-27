@@ -1,17 +1,27 @@
-# API 使用示例
+# Video Agent API Examples
 
-## 🚀 新功能：LLM 驱动的智能视频生成
+本文档提供了 video-agent-go 服务的详细 API 使用示例。
 
-### 1. 智能视频生成（推荐）
+## 🎯 系统架构模式
 
-使用 LLM 自动分析需求并选择最优的处理流程：
+我们的系统支持三种不同的处理模式：
+
+1. **固定工作流** - 预定义4步处理流程
+2. **LLM 智能编排** - LLM 选择和协调预定义 Agent
+3. **🔧 Tool-based 编排** - LLM 动态选择和组合工具
+
+## 🔧 Tool-based 编排 (推荐)
+
+### 1. 创建视频 - Tool-based
+
+使用 LLM 动态选择工具的智能视频生成：
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/video/generate-smart \
+curl -X POST http://localhost:8080/api/v1/video/generate-tools \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "制作一个介绍人工智能发展历程的教育视频，从图灵测试到现代大语言模型",
-    "style": "科技风格"
+    "text": "制作一个解释人工智能发展历程的教育视频",
+    "style": "专业教育风格"
   }'
 ```
 
@@ -21,21 +31,298 @@ curl -X POST http://localhost:8080/api/v1/video/generate-smart \
   "code": 200,
   "message": "success",
   "data": {
-    "task_id": "550e8400-e29b-41d4-a716-446655440000",
-    "status": "analyzing",
+    "task_id": "task_abc123",
+    "status": "initializing",
     "progress": 0,
-    "current_stage": "task_analysis",
+    "current_stage": "tool_selection",
     "processing_steps": [
-      "Analyzing user requirements",
-      "Generating execution plan", 
-      "Selecting optimal agents",
-      "Dynamic execution"
+      "Analyzing user requirements with LLM",
+      "LLM selecting appropriate tools",
+      "Executing tools dynamically",
+      "LLM orchestrating workflow",
+      "Quality validation with tools"
     ]
   }
 }
 ```
 
-### 2. 查看可用的智能体
+### 2. 查看可用工具
+
+```bash
+curl http://localhost:8080/api/v1/tools/list
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total_tools": 6,
+    "tools": [
+      {
+        "name": "analyze_content",
+        "description": "Analyze user input to understand content requirements and suggest optimal processing strategy",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "user_text": {
+              "type": "string",
+              "description": "User's original request text"
+            }
+          },
+          "required": ["user_text"]
+        }
+      },
+      {
+        "name": "generate_script",
+        "description": "Generate video script based on user requirements and content analysis",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "content_type": {
+              "type": "string",
+              "description": "Type of content (educational, commercial, entertainment)",
+              "enum": ["educational", "commercial", "entertainment", "news"]
+            },
+            "target_audience": {
+              "type": "string",
+              "description": "Target audience for the video"
+            }
+          },
+          "required": ["content_type", "target_audience"]
+        }
+      },
+      {
+        "name": "generate_images",
+        "description": "Generate images for video scenes using AI image generation",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "prompts": {
+              "type": "array",
+              "description": "Array of image generation prompts"
+            }
+          },
+          "required": ["prompts"]
+        }
+      },
+      {
+        "name": "generate_voice",
+        "description": "Generate voice narration for video content using text-to-speech",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Text content to convert to speech"
+            }
+          },
+          "required": ["text"]
+        }
+      },
+      {
+        "name": "check_quality",
+        "description": "Analyze and validate the quality of generated content",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "content_type": {
+              "type": "string",
+              "description": "Type of content to check",
+              "enum": ["script", "images", "audio", "video"]
+            }
+          },
+          "required": ["content_type"]
+        }
+      },
+      {
+        "name": "render_video",
+        "description": "Render final video from script, images, and audio components",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "script": {
+              "type": "object",
+              "description": "Video script with timing information"
+            }
+          },
+          "required": ["script"]
+        }
+      }
+    ]
+  }
+}
+```
+
+### 3. 查看工具执行日志
+
+```bash
+curl http://localhost:8080/api/v1/tools/execution/task_abc123
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "task_id": "task_abc123",
+    "tool_calls": [
+      {
+        "tool_call_id": "call_1",
+        "tool_name": "analyze_content",
+        "arguments": {
+          "user_text": "制作一个解释人工智能发展历程的教育视频"
+        },
+        "result": {
+          "success": true,
+          "content_type": "educational",
+          "complexity": "medium",
+          "target_audience": "general",
+          "estimated_duration": 90,
+          "key_topics": ["ai_origins", "machine_learning", "deep_learning", "current_applications"]
+        },
+        "timestamp": 1640995200,
+        "duration_ms": 500
+      },
+      {
+        "tool_call_id": "call_2",
+        "tool_name": "generate_script",
+        "arguments": {
+          "content_type": "educational",
+          "target_audience": "general",
+          "style": "professional",
+          "duration": 90,
+          "key_points": ["ai_origins", "machine_learning", "deep_learning", "current_applications"]
+        },
+        "result": {
+          "success": true,
+          "title": "AI Development History",
+          "structure": ["introduction", "origins", "evolution", "current_state", "conclusion"],
+          "estimated_duration": 95
+        },
+        "timestamp": 1640995205,
+        "duration_ms": 2500
+      },
+      {
+        "tool_call_id": "call_3",
+        "tool_name": "generate_images",
+        "arguments": {
+          "prompts": [
+            "Historical timeline of AI development",
+            "Early computer systems and algorithms",
+            "Modern neural networks visualization",
+            "Current AI applications in daily life"
+          ],
+          "style": "educational_infographic",
+          "resolution": "1920x1080"
+        },
+        "result": {
+          "success": true,
+          "images": [
+            {"id": "img_1", "url": "/uploads/images/ai_timeline.jpg"},
+            {"id": "img_2", "url": "/uploads/images/early_computers.jpg"},
+            {"id": "img_3", "url": "/uploads/images/neural_networks.jpg"},
+            {"id": "img_4", "url": "/uploads/images/ai_applications.jpg"}
+          ],
+          "count": 4
+        },
+        "timestamp": 1640995210,
+        "duration_ms": 8000
+      },
+      {
+        "tool_call_id": "call_4",
+        "tool_name": "generate_voice",
+        "arguments": {
+          "text": "人工智能的发展历程是一个充满创新与突破的故事...",
+          "voice_type": "professional",
+          "language": "zh-CN",
+          "emotion": "educational"
+        },
+        "result": {
+          "success": true,
+          "audio_file": "/uploads/audio/ai_history_narration.mp3",
+          "duration": 95,
+          "voice_type": "professional"
+        },
+        "timestamp": 1640995220,
+        "duration_ms": 3100
+      },
+      {
+        "tool_call_id": "call_5",
+        "tool_name": "check_quality",
+        "arguments": {
+          "content_type": "video",
+          "content_data": {
+            "script": "...",
+            "images": "...",
+            "audio": "..."
+          }
+        },
+        "result": {
+          "success": true,
+          "quality_scores": {
+            "overall": 0.92,
+            "accuracy": 0.95,
+            "clarity": 0.88,
+            "engagement": 0.90
+          },
+          "passed": true,
+          "recommendations": ["Consider adding more visual transitions"]
+        },
+        "timestamp": 1640995225,
+        "duration_ms": 1200
+      },
+      {
+        "tool_call_id": "call_6",
+        "tool_name": "render_video",
+        "arguments": {
+          "script": "...",
+          "images": ["img_1", "img_2", "img_3", "img_4"],
+          "audio": "/uploads/audio/ai_history_narration.mp3",
+          "effects": ["fade_transitions", "text_overlay"]
+        },
+        "result": {
+          "success": true,
+          "video_file": "/uploads/videos/ai_history_educational.mp4",
+          "duration": 95,
+          "resolution": "1920x1080",
+          "file_size": "45.2MB"
+        },
+        "timestamp": 1640995230,
+        "duration_ms": 12300
+      }
+    ],
+    "total_calls": 6,
+    "execution_model": "LLM-driven tool selection",
+    "total_duration": "27.6s"
+  }
+}
+```
+
+## 🧠 LLM 智能编排
+
+### 创建智能视频
+
+```bash
+curl -X POST http://localhost:8080/api/v1/video/generate-smart \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "制作一个介绍我们新产品的宣传视频",
+    "style": "现代商务风格",
+    "images": ["product1.jpg", "product2.jpg"],
+    "custom_scripts": [
+      {
+        "language": "python",
+        "code": "# 产品特效处理\nenhance_product_visuals()",
+        "stage": "post_processing"
+      }
+    ]
+  }'
+```
+
+### 查看可用 Agent
 
 ```bash
 curl http://localhost:8080/api/v1/agents/list
@@ -55,9 +342,19 @@ curl http://localhost:8080/api/v1/agents/list
         "capabilities": ["script_generation", "storyboard_creation", "narrative_structure"]
       },
       {
-        "name": "ImageGenerator", 
+        "name": "ImageGenerator",
         "description": "Generates images using DALL-E based on prompts",
         "capabilities": ["image_generation", "visual_creativity", "scene_creation"]
+      },
+      {
+        "name": "VoiceGenerator",
+        "description": "Generates voiceovers and narration using TTS",
+        "capabilities": ["voice_synthesis", "narration", "multilingual_tts"]
+      },
+      {
+        "name": "VideoRender",
+        "description": "Renders and combines media into final video",
+        "capabilities": ["video_rendering", "media_composition", "format_conversion"]
       },
       {
         "name": "Analysis",
@@ -66,226 +363,36 @@ curl http://localhost:8080/api/v1/agents/list
       },
       {
         "name": "QualityCheck",
-        "description": "Validates output quality and identifies issues", 
+        "description": "Validates output quality and identifies issues",
         "capabilities": ["quality_validation", "error_detection", "compliance_check"]
+      },
+      {
+        "name": "Optimization",
+        "description": "Optimizes and improves content quality",
+        "capabilities": ["content_optimization", "performance_enhancement", "quality_improvement"]
       }
     ]
   }
 }
 ```
 
-### 3. 查看执行日志
+## 📊 传统固定流程
 
-查看 LLM 如何智能选择和执行各个子 agent：
-
-```bash
-curl http://localhost:8080/api/v1/execution/log/550e8400-e29b-41d4-a716-446655440000
-```
-
-**响应示例：**
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "task_id": "550e8400-e29b-41d4-a716-446655440000",
-    "execution_log": [
-      {
-        "step_id": "step_1",
-        "agent_name": "Analysis",
-        "action": "analyze_content",
-        "timestamp": 1640995200,
-        "duration_ms": 1500,
-        "success": true,
-        "message": "Content analysis completed: educational content, intermediate complexity"
-      },
-      {
-        "step_id": "step_2", 
-        "agent_name": "ScriptGenerator",
-        "action": "generate_script",
-        "timestamp": 1640995205,
-        "duration_ms": 3000,
-        "success": true,
-        "message": "Generated script with 5 shots focusing on AI milestones"
-      },
-      {
-        "step_id": "step_3",
-        "agent_name": "ImageGenerator",
-        "action": "generate_images",
-        "timestamp": 1640995210,
-        "duration_ms": 8000, 
-        "success": true,
-        "message": "Generated 5 high-quality images for each AI milestone"
-      },
-      {
-        "step_id": "step_4",
-        "agent_name": "QualityCheck",
-        "action": "validate_quality",
-        "timestamp": 1640995220,
-        "duration_ms": 2000,
-        "success": true,
-        "message": "Quality score: 0.92 - Excellent quality, suggested adding subtitles"
-      },
-      {
-        "step_id": "step_5",
-        "agent_name": "Optimization", 
-        "action": "enhance_content",
-        "timestamp": 1640995225,
-        "duration_ms": 4000,
-        "success": true,
-        "message": "Applied color correction and enhanced transitions"
-      }
-    ],
-    "total_steps": 5
-  }
-}
-```
-
-## 🆚 对比：固定流程 vs LLM 驱动
-
-### 固定流程（原有方式）
+### 基础视频生成
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/video/generate \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "介绍人工智能的发展历程",
-    "style": "科技风格"
+    "text": "制作一个关于环保的短视频",
+    "style": "清新自然风格"
   }'
 ```
 
-**执行流程（固定）：**
-1. ✅ 生成脚本
-2. ✅ 生成图像  
-3. ✅ 生成语音
-4. ✅ 渲染视频
-5. ✅ 完成
-
-### LLM 驱动（智能方式）
+## 📈 任务状态查询
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/video/generate-smart \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "介绍人工智能的发展历程",
-    "style": "科技风格"
-  }'
-```
-
-**执行流程（动态）：**
-1. 🧠 **LLM 分析任务** - "这是教育内容，需要专业性和易懂性"
-2. 🔍 **选择分析代理** - 深入理解用户需求
-3. 📝 **智能脚本生成** - 基于分析结果优化脚本结构
-4. 🎨 **图像生成** - 针对AI发展历程选择合适的视觉风格
-5. 🎙️ **语音合成** - 选择适合教育内容的语音风格
-6. ✅ **质量检查** - 自动验证内容质量
-7. ⚡ **智能优化** - 根据检查结果进行优化
-8. 🎬 **最终渲染** - 生成高质量视频
-
-## 🌟 智能特性示例
-
-### 1. 自适应工作流
-
-不同类型的视频请求，LLM 会选择不同的处理流程：
-
-#### 新闻类视频
-```json
-{
-  "text": "制作一个关于今日科技新闻的视频",
-  "style": "新闻播报"
-}
-```
-**LLM 选择的流程：**
-- Analysis → ScriptGenerator → VoiceGenerator → VideoRender
-- *跳过图像生成，重点关注语音质量*
-
-#### 产品展示视频  
-```json
-{
-  "text": "展示我们的新款智能手机特性",
-  "style": "商务风格",
-  "images": ["product1.jpg", "product2.jpg"]
-}
-```  
-**LLM 选择的流程：**
-- Analysis → ImageGenerator → ScriptGenerator → VoiceGenerator → VideoRender → QualityCheck
-- *重点处理图像，确保产品展示效果*
-
-#### 教育内容
-```json
-{
-  "text": "解释量子计算的基本原理", 
-  "style": "教育风格"
-}
-```
-**LLM 选择的流程：**
-- Analysis → ScriptGenerator → ImageGenerator → VoiceGenerator → QualityCheck → Optimization → VideoRender
-- *全流程处理，确保教育内容的准确性和易懂性*
-
-### 2. 动态质量优化
-
-LLM 会根据中间结果动态调整后续步骤：
-
-```bash
-# 如果质量检查发现问题
-{
-  "step_id": "quality_check_1",
-  "agent_name": "QualityCheck", 
-  "result": {
-    "quality_score": 0.65,  // 低于阈值
-    "issues": ["audio_quality_low", "image_blur"]
-  }
-}
-
-# LLM 自动决定重新处理
-{
-  "step_id": "adaptive_reprocess",
-  "agent_name": "VoiceGenerator",
-  "action": "regenerate_with_higher_quality"
-}
-```
-
-### 3. 智能错误恢复
-
-```bash
-# 如果某个 agent 失败
-{
-  "step_id": "image_gen_1",
-  "agent_name": "ImageGenerator",
-  "success": false,
-  "error": "DALL-E API rate limit exceeded"
-}
-
-# LLM 自动选择备用方案
-{
-  "step_id": "fallback_strategy",
-  "agent_name": "ImageGenerator", 
-  "action": "use_stock_images_with_custom_prompts"
-}
-```
-
-## 📊 性能对比
-
-| 特性 | 固定流程 | LLM 驱动 |
-|------|----------|----------|
-| 执行步骤 | 4步（固定） | 3-8步（动态） |
-| 质量检查 | ❌ 无 | ✅ 自动 |
-| 错误恢复 | ❌ 失败即停止 | ✅ 智能重试 |
-| 个性化 | ❌ 统一处理 | ✅ 内容自适应 |
-| 优化能力 | ❌ 无 | ✅ 自动优化 |
-| 可观测性 | ❌ 简单日志 | ✅ 详细执行日志 |
-
-## 基础视频生成
-
-### 1. 简单文本生成视频
-
-```bash
-curl -X POST http://localhost:8080/api/v1/video/generate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "介绍人工智能的发展历程，从图灵测试到现代大语言模型",
-    "style": "科技风格"
-  }'
+curl http://localhost:8080/api/v1/video/status/task_abc123
 ```
 
 **响应示例：**
@@ -294,91 +401,27 @@ curl -X POST http://localhost:8080/api/v1/video/generate \
   "code": 200,
   "message": "success",
   "data": {
-    "task_id": "550e8400-e29b-41d4-a716-446655440000",
-    "status": "processing"
-  }
-}
-```
-
-### 2. 查询生成状态
-
-```bash
-curl http://localhost:8080/api/v1/video/status/550e8400-e29b-41d4-a716-446655440000
-```
-
-**响应示例：**
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "task_id": "550e8400-e29b-41d4-a716-446655440000",
+    "task_id": "task_abc123",
     "status": "completed",
     "result": {
-      "title": "人工智能发展历程",
-      "style": "科技风格",
-      "shots": [
-        {
-          "scene": "图灵测试的提出",
-          "image_prompt": "A vintage computer room from 1950s with Alan Turing working on early computers",
-          "voiceover": "1950年，阿兰·图灵提出了著名的图灵测试",
-          "duration": 5,
-          "clip_path": "uploads/images/image_1234567890.png",
-          "voice_path": "uploads/audio/voice_1234567890.mp3",
-          "subtitle": "图灵测试的诞生"
-        }
-      ],
-      "bgm": "科技感背景音乐",
-      "final": "uploads/videos/AI_Development_1234567890.mp4",
-      "task_id": "550e8400-e29b-41d4-a716-446655440000",
-      "status": "completed"
+      "task_id": "task_abc123",
+      "title": "AI Development History",
+      "status": "completed",
+      "final": "/uploads/videos/ai_history_educational.mp4",
+      "duration": 95,
+      "quality_score": 0.92
     }
   }
 }
 ```
 
-## 高级功能示例
-
-### 1. 包含参考图片的视频生成
-
-```bash
-curl -X POST http://localhost:8080/api/v1/video/generate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "展示我们公司的产品特性",
-    "images": [
-      "https://example.com/product1.jpg",
-      "https://example.com/product2.jpg"
-    ],
-    "style": "商务风格",
-    "audio": "https://example.com/background.mp3"
-  }'
-```
-
-### 2. 获取所有任务列表
+## 📋 任务列表查询
 
 ```bash
 curl http://localhost:8080/api/v1/video/list
 ```
 
-**响应示例：**
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "task_id": "550e8400-e29b-41d4-a716-446655440000",
-      "input": "{\"text\":\"介绍人工智能\",\"style\":\"科技风格\"}",
-      "output": "{\"title\":\"人工智能发展历程\"...}",
-      "created_at": "2024-01-01T10:00:00Z"
-    }
-  ]
-}
-```
-
-### 3. 健康检查
+## 🏥 健康检查
 
 ```bash
 curl http://localhost:8080/api/v1/health
@@ -392,150 +435,229 @@ curl http://localhost:8080/api/v1/health
   "data": {
     "status": "healthy",
     "service": "video-agent-go",
-    "mode": "llm-orchestrated"
+    "modes": "tool-based"
   }
 }
 ```
 
-## 错误处理示例
+## 🔧 JavaScript 集成示例
 
-### 1. 无效请求
-
-```bash
-curl -X POST http://localhost:8080/api/v1/video/generate \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
-
-**错误响应：**
-```json
-{
-  "code": 400,
-  "message": "Invalid request body"
-}
-```
-
-### 2. 任务不存在
-
-```bash
-curl http://localhost:8080/api/v1/video/status/invalid-task-id
-```
-
-**错误响应：**
-```json
-{
-  "code": 404,
-  "message": "Task not found"
-}
-```
-
-## 集成示例
-
-### JavaScript/Node.js
+### Tool-based 模式
 
 ```javascript
-const axios = require('axios');
+class VideoAgentClient {
+  constructor(baseURL = 'http://localhost:8080') {
+    this.baseURL = baseURL;
+  }
 
-async function generateVideoSmart(text, style) {
-  try {
-    // 使用智能生成接口
-    const response = await axios.post('http://localhost:8080/api/v1/video/generate-smart', {
-      text: text,
-      style: style
+  // 使用 Tool-based 智能编排生成视频
+  async generateVideoWithTools(request) {
+    const response = await fetch(`${this.baseURL}/api/v1/video/generate-tools`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
     });
-    
-    const taskId = response.data.data.task_id;
-    console.log('Smart task created:', taskId);
-    
-    // 轮询检查状态
-    let status = 'analyzing';
-    while (status === 'analyzing' || status === 'processing') {
-      await new Promise(resolve => setTimeout(resolve, 5000));
+    return response.json();
+  }
+
+  // 查看可用工具
+  async getAvailableTools() {
+    const response = await fetch(`${this.baseURL}/api/v1/tools/list`);
+    return response.json();
+  }
+
+  // 查看工具执行日志
+  async getToolExecutionLog(taskId) {
+    const response = await fetch(`${this.baseURL}/api/v1/tools/execution/${taskId}`);
+    return response.json();
+  }
+
+  // 轮询任务状态直到完成
+  async waitForCompletion(taskId, pollInterval = 2000) {
+    while (true) {
+      const statusResponse = await this.getTaskStatus(taskId);
+      const status = statusResponse.data;
       
-      const statusResponse = await axios.get(`http://localhost:8080/api/v1/video/status/${taskId}`);
-      status = statusResponse.data.data.status;
+      console.log(`Task ${taskId} status: ${status.status}`);
       
-      console.log('Current status:', status);
-      
-      // 查看执行日志
-      if (status === 'processing') {
-        const logResponse = await axios.get(`http://localhost:8080/api/v1/execution/log/${taskId}`);
-        console.log('Execution steps:', logResponse.data.data.execution_log.length);
+      if (status.status === 'completed') {
+        return status.result;
+      } else if (status.status === 'failed') {
+        throw new Error('Task failed');
       }
+      
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
     }
-    
-    if (status === 'completed') {
-      console.log('Video generated successfully with LLM orchestration!');
-    }
-    
-  } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
+  }
+
+  async getTaskStatus(taskId) {
+    const response = await fetch(`${this.baseURL}/api/v1/video/status/${taskId}`);
+    return response.json();
   }
 }
 
 // 使用示例
-generateVideoSmart('创建一个关于环保的短视频', '自然风格');
+async function createEducationalVideo() {
+  const client = new VideoAgentClient();
+  
+  try {
+    // 1. 先查看可用工具
+    const toolsResponse = await client.getAvailableTools();
+    console.log('Available tools:', toolsResponse.data.tools.map(t => t.name));
+    
+    // 2. 创建视频任务
+    const response = await client.generateVideoWithTools({
+      text: "制作一个关于量子计算基础概念的教育视频",
+      style: "学术教育风格"
+    });
+    
+    const taskId = response.data.task_id;
+    console.log(`Task created: ${taskId}`);
+    
+    // 3. 等待完成
+    const result = await client.waitForCompletion(taskId);
+    console.log('Video completed:', result.final);
+    
+    // 4. 查看详细的工具执行日志
+    const logResponse = await client.getToolExecutionLog(taskId);
+    console.log('Tool execution summary:');
+    logResponse.data.tool_calls.forEach(call => {
+      console.log(`- ${call.tool_name}: ${call.duration_ms}ms`);
+    });
+    
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+// 执行
+createEducationalVideo();
 ```
 
-### Python
+## 🐍 Python 集成示例
+
+### Tool-based 模式
 
 ```python
 import requests
 import time
 import json
 
-def generate_video_smart(text, style):
-    try:
-        # 使用智能生成接口
-        response = requests.post('http://localhost:8080/api/v1/video/generate-smart', 
-                               json={'text': text, 'style': style})
-        response.raise_for_status()
-        
-        task_id = response.json()['data']['task_id']
-        print(f'Smart task created: {task_id}')
-        
-        # 轮询检查状态
-        status = 'analyzing'
-        while status in ['analyzing', 'processing']:
-            time.sleep(5)
+class VideoAgentClient:
+    def __init__(self, base_url="http://localhost:8080"):
+        self.base_url = base_url
+    
+    def generate_video_with_tools(self, request_data):
+        """使用 Tool-based 智能编排生成视频"""
+        response = requests.post(
+            f"{self.base_url}/api/v1/video/generate-tools",
+            json=request_data
+        )
+        return response.json()
+    
+    def get_available_tools(self):
+        """获取可用工具列表"""
+        response = requests.get(f"{self.base_url}/api/v1/tools/list")
+        return response.json()
+    
+    def get_tool_execution_log(self, task_id):
+        """获取工具执行日志"""
+        response = requests.get(f"{self.base_url}/api/v1/tools/execution/{task_id}")
+        return response.json()
+    
+    def get_task_status(self, task_id):
+        """获取任务状态"""
+        response = requests.get(f"{self.base_url}/api/v1/video/status/{task_id}")
+        return response.json()
+    
+    def wait_for_completion(self, task_id, poll_interval=2):
+        """等待任务完成"""
+        while True:
+            status_response = self.get_task_status(task_id)
+            status = status_response['data']['status']
             
-            status_response = requests.get(f'http://localhost:8080/api/v1/video/status/{task_id}')
-            status_response.raise_for_status()
+            print(f"Task {task_id} status: {status}")
             
-            status = status_response.json()['data']['status']
-            print(f'Current status: {status}')
+            if status == 'completed':
+                return status_response['data']['result']
+            elif status == 'failed':
+                raise Exception('Task failed')
             
-            # 查看智能体执行情况
-            if status == 'processing':
-                log_response = requests.get(f'http://localhost:8080/api/v1/execution/log/{task_id}')
-                if log_response.status_code == 200:
-                    steps = log_response.json()['data']['execution_log']
-                    print(f'Executed {len(steps)} intelligent steps')
-                    for step in steps[-3:]:  # 显示最近3步
-                        print(f"  - {step['agent_name']}: {step['message']}")
-        
-        if status == 'completed':
-            print('Video generated successfully using LLM orchestration!')
-            
-    except requests.exceptions.RequestException as e:
-        print(f'Error: {e}')
+            time.sleep(poll_interval)
 
-# 使用示例
-generate_video_smart('创建一个关于科技创新的短视频', '现代风格')
+def create_commercial_video():
+    """创建商业宣传视频示例"""
+    client = VideoAgentClient()
+    
+    try:
+        # 1. 查看可用工具
+        tools_response = client.get_available_tools()
+        tool_names = [tool['name'] for tool in tools_response['data']['tools']]
+        print(f"Available tools: {tool_names}")
+        
+        # 2. 创建视频任务
+        response = client.generate_video_with_tools({
+            "text": "为我们的新款智能手表制作产品发布视频",
+            "style": "现代科技风格"
+        })
+        
+        task_id = response['data']['task_id']
+        print(f"Task created: {task_id}")
+        
+        # 3. 等待完成
+        result = client.wait_for_completion(task_id)
+        print(f"Video completed: {result['final']}")
+        
+        # 4. 分析工具使用情况
+        log_response = client.get_tool_execution_log(task_id)
+        tool_calls = log_response['data']['tool_calls']
+        
+        print("\n🔧 Tool Execution Analysis:")
+        total_duration = 0
+        for call in tool_calls:
+            duration = call['duration_ms']
+            total_duration += duration
+            print(f"  • {call['tool_name']}: {duration}ms")
+            
+        print(f"  📊 Total processing time: {total_duration}ms")
+        print(f"  🛠️  Tools used: {len(tool_calls)}")
+        print(f"  🎯 Execution model: {log_response['data']['execution_model']}")
+        
+    except Exception as error:
+        print(f"Error: {error}")
+
+if __name__ == "__main__":
+    create_commercial_video()
 ```
 
-## 部署后测试
+## 🔍 工具执行流程分析
 
-如果服务部署在远程服务器上，请替换 `localhost:8080` 为实际的服务地址：
+基于 Tool-based 模式，LLM 的典型工具选择流程：
 
-```bash
-export VIDEO_API_HOST="https://your-api-domain.com"
+### 教育内容
+```
+analyze_content → generate_script → generate_images → generate_voice → check_quality → render_video
+```
 
-# 测试智能生成
-curl $VIDEO_API_HOST/api/v1/video/generate-smart \
-  -H "Content-Type: application/json" \
-  -d '{"text": "测试智能视频生成", "style": "现代风格"}'
+### 商业内容  
+```
+analyze_content → generate_images → generate_script → generate_voice → render_video
+```
 
-# 查看可用智能体
-curl $VIDEO_API_HOST/api/v1/agents/list
-``` 
+### 质量问题自动修复
+```
+check_quality → [发现问题] → generate_script + generate_images → check_quality → render_video
+```
+
+## 🎯 最佳实践
+
+1. **优先使用 Tool-based 模式** - 提供最大灵活性和最佳结果
+2. **监控工具执行日志** - 了解 LLM 的决策过程
+3. **根据内容类型选择合适模式** - 简单任务可用固定流程
+4. **关注质量分数** - Tool-based 模式通常能达到更高质量
+
+---
+
+通过这些 API，您可以充分利用我们的 **Tool-based AI Agent** 系统，实现真正智能化的视频生成！🔧🚀 
