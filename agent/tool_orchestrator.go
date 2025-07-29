@@ -12,7 +12,7 @@ import (
 	"video-agent-go/model"
 )
 
-// ToolBasedOrchestrator 基于工具的LLM编排器1
+// ToolBasedOrchestrator 基于工具的LLM编排器
 type ToolBasedOrchestrator struct {
 	toolRegistry  *ToolRegistry
 	context       *ToolOrchestrationContext
