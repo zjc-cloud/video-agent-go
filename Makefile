@@ -14,6 +14,7 @@ help:
 	@echo "  docker-build - Build Docker image"
 	@echo "  docker-run - Run with Docker Compose"
 	@echo "  dev        - Start development environment"
+	@echo "  git-push   - Smart git commit and push with auto-generated message"
 
 # Project setup
 setup:
@@ -99,4 +100,8 @@ docs:
 
 # Production build
 prod-build:
-	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/videoagent cmd/main.go 
+	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/videoagent cmd/main.go
+
+# Git smart push with auto commit message
+git-push:
+	@bash scripts/git-smart-push.sh 
